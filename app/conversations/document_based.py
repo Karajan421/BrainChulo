@@ -1,7 +1,7 @@
 from langchain.document_loaders import TextLoader
 from app.memory.chroma_memory import Chroma
 from langchain.memory import VectorStoreRetrieverMemory
-from langchain.text_splitter import CharacterTextSplitter
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.chains import ConversationChain
 from langchain.agents import Tool, initialize_agent, AgentType, load_tools
 from langchain.schema import OutputParserException
@@ -22,13 +22,13 @@ class DocumentBasedConversation():
         """
 
         self.llm = OobaboogaLLM()
-        self.text_splitter = CharacterTextSplitter(
-            chunk_size=1000, chunk_overlap=0)
+        self.text_splitter = RecursiveCharacterTextSplitter(chunk_size=512, chunk_overlap=32, separators=[" ", ",", "\n"])
+
         self.vector_store_docs = Chroma(collection_name="docs_collection")
         self.vector_store_convs = Chroma(collection_name="convos_collection")
 
         convs_retriever = self.vector_store_convs.get_store().as_retriever(
-            search_kwargs=dict(top_k_docs_for_context=10))
+            search_kwargs=dict(top_k_docs_for_context=20))
 
         convs_memory = VectorStoreRetrieverMemory(retriever=convs_retriever)
 
@@ -101,7 +101,7 @@ class DocumentBasedConversation():
         """
         logger.info(f"Searching for: {search_input} in LTM")
         docs = self.vector_store_docs.similarity_search_with_score(
-            search_input, top_k_docs_for_context=10)
+            search_input, top_k_docs_for_context=20)
         return docs
 
     def predict(self, input):

@@ -35,7 +35,7 @@ class ConversationWithDocumentTemplate(StringPromptTemplate):
         # Set the agent_scratchpad variable to that value
         input_question = kwargs.get("input")
         docs = self.document_store.similarity_search_with_score(
-            input_question, top_k_docs_for_context=10
+            input_question, top_k_docs_for_context=20
         )
         kwargs["search"] = docs
 
