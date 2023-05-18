@@ -7,3 +7,5 @@ InstructorEmbedding
 gradio
 bs4
 protobuf==3.20
+openai
+tiktoken
