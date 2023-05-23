@@ -1,0 +1,10 @@
+Metadata-Version: 2.1
+Name: guidance
+Version: 0.0.47
+Summary: Tools to guide the output of large language models.
+Home-page: https://github.com/slundberg/guidance
+Author: Scott Lundberg and Marco Tulio Ribeiro
+Author-email: scott.lundberg@microsoft.com
+Provides-Extra: docs
+Provides-Extra: test
+License-File: LICENSE
