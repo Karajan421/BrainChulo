@@ -9,7 +9,7 @@ import collections
 import json
 import re
 from ._llm import LLM, LLMSession, SyncSession
-
+from transformers import GPT2Tokenizer
 import requests
 import warnings
 
@@ -94,8 +94,15 @@ class TextGenerationWebUI(LLM):
         self.temperature = temperature
         self._text_generation_web_ui_client = TextGenerationWebUIRestClient() 
         self.caller = self._text_generation_web_ui_client.generate
+        self._tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
 
+    def encode(self, string, fragment=True):
+        # note that is_fragment is not used for this tokenizer
+        return self._tokenizer.encode(string)
 
+    def decode(self, tokens, fragment=True):
+        return self._tokenizer.decode(tokens)
+    
     def session(self, asynchronous=False):
         if asynchronous:
             TextGenerationWebUISession(self)

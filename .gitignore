@@ -16,3 +16,4 @@ venv/
 
 # Do not save index
 index.json
+node_modules

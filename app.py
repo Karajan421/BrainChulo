@@ -13,6 +13,9 @@ from langchain.text_splitter import TokenTextSplitter, RecursiveCharacterTextSpl
 from langchain.vectorstores import Chroma
 from app.prompt_templates.document_based_conversation import ConversationWithDocumentTemplate 
 from langchain.document_loaders import TextLoader
+from app.tools.web_access import WebAccess
+from app.tools.context_access import contextAccess
+
 
 app = Flask(__name__)
 CORS(app)
@@ -25,50 +28,9 @@ nest_asyncio.apply()
 
 
 def run_script():
-    print("TESTING ZERO")
-
-    #data = request.get_json()
-    #context = data.get('context')
-    convo = DocumentBasedConversation()
-    print("TESTING ONE")
-    #question = data.get('question')
-    
-        
-        # set the default language model used to execute guidance programs
-    guidance.llm = guidance.llms.TextGenerationWebUI()
-    guidance.llm.caching = False
-    print("TESTING")
-    question = "Whos is Macbeth?"
-    file_path = "/home/karajan/Documents/macbeth.txt"
-    convo.load_document(file_path)
-    context = convo.context_predict(question)
-
-    
-    """"
-    # Load text file
-    with open(file_path, 'r') as file:
-        text = file.read()
-    title = os.path.basename(file_path)
-
-    docs = {title: text}  
-    documents = [Document(page_content=docs[title]) for title in docs]
-    # Create new vector store and index it
-    vectordb = None
-    
-    # Split by section, then split by token limmit
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=100, chunk_overlap=20)
-    texts = text_splitter.split_documents(documents)
-    text_splitter = TokenTextSplitter(chunk_size=1000,chunk_overlap=10, encoding_name="cl100k_base")  # may be inexact
-    texts = text_splitter.split_documents(texts)
-
-    vectordb = Chroma.from_documents(documents=texts, embedding=OpenAIEmbeddings())
-    
-    
-    search = vectordb.similarity_search_with_score(
-    question, top_k_docs_for_context=20
-        )
-    """
-    program = guidance("""### Instruction:
+    ctxtsearch = contextAccess
+    websearch = WebAccess
+    prompt_template = """### Instruction:
     You are a librarian AI who uses document information to answer questions. Documents as formatted as follows: [(Document(page_content="<important context>", metadata='source': '<source>'), <rating>)] where <important context> is the context, <source> is the source, and <rating> is the rating. 
     Strictly use the following format:
 
@@ -103,12 +65,75 @@ def run_script():
     ### Response:
     Question: {{question}}
     Thought: {{gen 'thought' stop='\\n'}}
-    Action: {{context}}
-    Observation: {{gen 'thought2' stop='\\n'}}
+    Action: {{select 'tool_name' options=valid_tools}}
     Action Input: {{gen 'actInput' stop='\\n'}}
-    Thought: {{gen 'thought3' stop='\\n'}}
-    Final Answer: {{gen 'final' stop='\\n'}}
-    ,)""")
+    Observation:{{search actInput}}
+    Thought: {{gen 'thought2' stop='\\n'}}
+    Final Answer: {{gen 'final' stop='\\n'}}"""
+    print("TESTING ZERO")
+
+
+    valid_answers = ['Action', 'Final Answer']
+    valid_tools = ['Google Search']
+
+  
+
+    
+    convo = DocumentBasedConversation()
+    print("TESTING ONE")
+    
+        
+        # set the default language model used to execute guidance programs
+    guidance.llm = guidance.llms.TextGenerationWebUI()
+    guidance.llm.caching = False
+    prompt = guidance(prompt_template)
+    question='Is Eminem a football player?'
+    google = websearch.searchGoogle(question)
+    result = prompt(question='Is Eminem a football player?', search=websearch.searchGoogle, valid_answers=valid_answers, valid_tools=valid_tools)
+  
+    return str(result)
+
+    print("TESTING")
+    question = "Whos is Macbeth?"
+    file_path = "/home/karajan/Documents/macbeth.txt"
+    convo.load_document(file_path)
+    context = convo.context_predict(question)
+
+    valid_answers = ['Action', 'Final Answer']
+    valid_tools = ['Google Search']
+
+    prompt = guidance(prompt_template)
+    result = prompt(question='Is Eminem a football player?', search=websearch.searchGoogle, valid_answers=valid_answers, valid_tools=valid_tools)
+    return result
+    
+    """"
+    # Load text file
+    with open(file_path, 'r') as file:
+        text = file.read()
+    title = os.path.basename(file_path)
+
+    docs = {title: text}  
+    documents = [Document(page_content=docs[title]) for title in docs]
+    # Create new vector store and index it
+    vectordb = None
+    
+    # Split by section, then split by token limmit
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=100, chunk_overlap=20)
+    texts = text_splitter.split_documents(documents)
+    text_splitter = TokenTextSplitter(chunk_size=1000,chunk_overlap=10, encoding_name="cl100k_base")  # may be inexact
+    texts = text_splitter.split_documents(texts)
+
+    vectordb = Chroma.from_documents(documents=texts, embedding=OpenAIEmbeddings())
+    
+    
+    search = vectordb.similarity_search_with_score(
+    question, top_k_docs_for_context=20
+        )
+    """
+    program = guidance(prompt_template)
+
+
+    
 
     executed_program = program(
     question=question,
