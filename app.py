@@ -23,43 +23,16 @@ CORS(app)
 # Apply the nest_asyncio patch at the start of your script.
 nest_asyncio.apply()
 
-valid_answers = ['Action', 'Final Answer']
-valid_tools = ['Context Search']
+@app.route('/run_script', methods=['POST'])
+@cross_origin()
 
-class CustomAgentGuidance:
-    
-    def __init__(self, guidance, tools, num_iter=3):
-        self.guidance = guidance
-        self.tools = tools
-        self.num_iter = num_iter
 
-    def do_tool(self, tool_name, actInput):
-        return self.tools[tool_name](actInput)
-    
-    def __call__(self, query):
-        prompt_start = self.guidance(prompt_start_template)
-        result_start = prompt_start(question=query, valid_answers=valid_answers)
-
-        result_mid = result_start
-        
-        for _ in range(self.num_iter - 1):
-            if result_mid['answer'] == 'Final Answer':
-                break
-            history = result_mid.__str__()
-            prompt_mid = self.guidance(prompt_mid_template)
-            result_mid = prompt_mid(history=history, do_tool=self.do_tool, valid_answers=valid_answers, valid_tools=valid_tools)
-        
-        if result_mid['answer'] != 'Final Answer':
-            history = result_mid.__str__()
-            prompt_mid = self.guidance(prompt_final_template)
-            result_final = prompt_mid(history=history, do_tool=self.do_tool, valid_answers=['Final Answer'], valid_tools=valid_tools)
-        else:
-            history = result_mid.__str__()
-            prompt_mid = self.guidance(history + "{{gen 'fn' stop='\\n'}}")
-            result_final = prompt_mid()
-        return result_final['fn']
-    
-prompt_start_template = """### Instruction:
+def run_script():
+     # Extract the question from the request body
+    question = request.json.get('question', 'Who is the main character?') # Default question if not provided
+    ctxtsearch = contextAccess
+    websearch = WebAccess
+    prompt_template = """### Instruction:
     You are a librarian AI who uses document information to answer questions. Documents as formatted as follows: [(Document(page_content="<important context>", metadata='source': '<source>'), <rating>)] where <important context> is the context, <source> is the source, and <rating> is the rating. 
     
     Context Search: A way to explore your documents. Useful for when you need to answer questions about your database. The input is the question to search relavant information.
@@ -101,18 +74,6 @@ prompt_start_template = """### Instruction:
     Observation:{{search actInput}}
     Thought: {{gen 'thought2' stop='\\n'}}
     Final Answer: {{gen 'final' stop='\\n'}}"""
-
-
-@app.route('/run_script', methods=['POST'])
-@cross_origin()
-
-
-def run_script():
-     # Extract the question from the request body
-    question = request.json.get('question', 'Who is the main character?') # Default question if not provided
-    ctxtsearch = contextAccess
-    websearch = WebAccess
-    
     print("TESTING ZERO")
 
 
@@ -125,23 +86,8 @@ def run_script():
     # set the default language model used to execute guidance programs
     guidance.llm = guidance.llms.TextGenerationWebUI()
     guidance.llm.caching = False
-   # prompt = guidance(prompt_template)
-    google = websearch.searchGoogle
-    dict_tools = {
-    'Google Search': google
-}
-    custom_agent = CustomAgentGuidance(guidance, dict_tools)
-
-    list_queries = [
-        "How much is the salary of number 8 of Manchester United?",
-        "What is the population of Congo?",
-        "Where was the first president of South Korean born?",
-        "What is the population of the country that won World Cup 2022?"    
-    ]
-
-    final_answer = custom_agent(list_queries[0])
-    final_answer = custom_agent(list_queries[1])
-    return final_answer
+    prompt = guidance(prompt_template)
+    google = websearch.searchGoogle(question)
     result = prompt(question=question, search=ctxtsearch.searchContext, valid_answers=valid_answers, valid_tools=valid_tools)
   
     return str(result)

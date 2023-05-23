@@ -6,13 +6,22 @@ from server.tools import load_tools
 from server.agent import CustomAgentGuidance
 import os
 from langchain.llms import OpenAI
+from flask import Flask, request, jsonify
+from flask_cors import CORS, cross_origin
+
+import nest_asyncio
+
+app = Flask(__name__)
+CORS(app)
 
 
-
+# Apply the nest_asyncio patch at the start of your script.
+nest_asyncio.apply()
 os.environ["SERPER_API_KEY"] = 'fbac5061b434c6b0e5f55968258b144209993ab2'
 MODEL_PATH = '/home/karajan/labzone/textgen/text-generation-webui/models/anon8231489123_vicuna-13b-GPTQ-4bit-128g'
 CHECKPOINT_PATH = '/home/karajan/labzone/textgen/text-generation-webui/models/anon8231489123_vicuna-13b-GPTQ-4bit-128g/vicuna-13b-4bit-128g.safetensors'
 DEVICE = torch.device('cuda:0')
+
 
 examples = [
     ["How much is the salary of number 8 of Manchester United?"],
@@ -21,26 +30,26 @@ examples = [
     ["What is the population of the country that won World Cup 2022?"]    
 ]
 
-def greet(name):
-    final_answer = custom_agent(name)
-    return final_answer, final_answer['fn']
+@app.route('/run_script', methods=['POST'])
+@cross_origin()
 
-model, tokenizer = load_model_main(MODEL_PATH, CHECKPOINT_PATH, DEVICE)
-llama = guidance.llms.Transformers(model=model, tokenizer=tokenizer, device=0)
-guidance.llm = llama
 
-dict_tools = load_tools(llama)
+def run_script():
+    question = request.json.get('question', 'Who is the main character?') # Default question if not provided
 
-custom_agent = CustomAgentGuidance(guidance, dict_tools)
 
-# Call the main function from the ingest script
+    #model, tokenizer = load_model_main(MODEL_PATH, CHECKPOINT_PATH, DEVICE)
+    llama =  guidance.llm = guidance.llms.TextGenerationWebUI()
+    guidance.llm.caching = False
 
-list_outputs = [gr.Textbox(lines=5, label="Reasoning"), gr.Textbox(label="Final Answer")]
-demo = gr.Interface(fn=greet, inputs=gr.Textbox(lines=1, label="Input Text", placeholder="Enter a question here..."), 
-                    outputs=list_outputs,
-                    title="Demo ReAct agent with Guidance",
-                    description="The source code can be found at: https://github.com/QuangBK/localLLM_guidance/",
-                   examples=examples)
-demo.launch(server_name="0.0.0.0", server_port=7863)
+    dict_tools = load_tools(llama)
+
+    custom_agent = CustomAgentGuidance(guidance, dict_tools)
+
+    final_answer = custom_agent(question)
+    return str(final_answer), str(final_answer['fn'])
 
 CHROMA_SETTINGS = {}  # Fill with your settings
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5001)

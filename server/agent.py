@@ -15,7 +15,7 @@ CHROMA_SETTINGS = Settings(
         anonymized_telemetry=False
 )
 
-valid_answers = ['Action', 'Final Answer']
+valid_answers = ['Action']
 valid_tools = ['Chroma Search']
 
 prompt_start_template = """Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
@@ -59,7 +59,7 @@ Final Answer: Anupama Nadella is 50 years old.
 ### Response:
 Question: {{question}}
 Thought: {{gen 't1' stop='\\n'}}
-{{select 'answer' logprobs='logprobs' options=valid_answers}}: """
+{{select 'answer' options=valid_answers}}: """
 
 prompt_mid_template = """{{history}}{{select 'tool_name' options=valid_tools}}
 Action Input: {{gen 'actInput' stop='\\n'}}
