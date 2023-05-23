@@ -29,7 +29,7 @@ nest_asyncio.apply()
 
 def run_script():
      # Extract the question from the request body
-    question = request.json.get('question', 'What is the office location?') # Default question if not provided
+    question = request.json.get('question', 'Who is the main character?') # Default question if not provided
     ctxtsearch = contextAccess
     websearch = WebAccess
     prompt_template = """### Instruction:
@@ -40,8 +40,8 @@ def run_script():
     Strictly use the following format:
 
     Question: the input question you must answer
-    Thought: you should always think about what to do
-    Action: what you should do to answer the question, should a search in Context
+    Thought: you should think about the best way to query your documents with Context Search
+    Action: the action to take, should be one of [Context Search]
     Action Input: the input to the action, should be a question.
     Observation: the result of the action
     ... (this Thought/Action/Action Input/Observation can repeat N times)
@@ -51,7 +51,7 @@ def run_script():
 
     For examples:
     Question: How old is CEO of Microsoft wife?
-    Thought: First, I need to find who is the CEO of Microsoft.
+    Thought: I need to look in my database to find that
     Action: Context Search
     Action Input: Who is the CEO of Microsoft?
     Observation: Satya Nadella is the CEO of Microsoft.
