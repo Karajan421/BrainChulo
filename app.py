@@ -27,18 +27,24 @@ nest_asyncio.apply()
 def run_script():
     print("TESTING ZERO")
 
-    data = request.get_json()
+    #data = request.get_json()
+    #context = data.get('context')
     convo = DocumentBasedConversation()
     print("TESTING ONE")
-    question = data.get('question')
-    #context = data.get('context')
+    #question = data.get('question')
+    
         
         # set the default language model used to execute guidance programs
     guidance.llm = guidance.llms.TextGenerationWebUI()
     guidance.llm.caching = False
     print("TESTING")
+    question = "Whos is Macbeth?"
+    file_path = "/home/karajan/Documents/macbeth.txt"
+    convo.load_document(file_path)
+    context = convo.context_predict(question)
 
-    file_path = "/home/karajan/Documents/olly_tuteur_dataset/french_litterature/horla.txt"
+    
+    """"
     # Load text file
     with open(file_path, 'r') as file:
         text = file.read()
@@ -56,48 +62,50 @@ def run_script():
     texts = text_splitter.split_documents(texts)
 
     vectordb = Chroma.from_documents(documents=texts, embedding=OpenAIEmbeddings())
-    question = "Who's the hero?"
     
-    context = vectordb.similarity_search_with_score(
+    
+    search = vectordb.similarity_search_with_score(
     question, top_k_docs_for_context=20
         )
-    
-    program = guidance("""Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.### Instruction:
-    You are a librarian AI who uses document information to answer questions. Documents as formatted as follows: [(Document(page_content="<important context>", metadata='source': '<source>'), <rating>)] where <important context> is the context, <source> is the source, and <rating> is the rating. 
+    """
+    program = guidance("""### Instruction:You are a librarian AI who uses document information to answer questions. Documents as formatted as follows: [(Document(page_content="<important context>", metadata='source': '<source>'), <rating>)] where <important context> is the context, <source> is the source, and <rating> is the rating. 
     Strictly use the following format:
 
     Question: the input question you must answer
+    Context: the documents at your disposal to answer
     Thought: you should always think about what to do
-    Action: what you should do to answer the question, should a search in Context
+    Action: what you should do to answer the question, should a search in the documents provided
     Action Input: the input to the action, should be a question.
     Observation: the result of the action
     ... (this Thought/Action/Action Input/Observation can repeat N times)
     Thought: I now know the final answer
     Final Answer: the final answer to the original input question
 
+
     For examples:
     Question: How old is CEO of Microsoft wife?
+    Context:[(Document(page_content='Satya Nadella is the CEO of Microsoft Corporation. He took over as CEO in February 2014, succeeding Steve Ballmer.'), 0.95), (Document(page_content='Microsoft, the Redmond-based tech giant, is led by CEO Satya Nadella, who assumed the role in 2014.', 0.91), (Document(page_content='The chief executive officer of Microsoft Corporation is Satya Nadella. Nadella took the helm in 2014 after Steve Ballmer stepped down.'), 0.93)][(Document(page_content='Satya Nadella, the CEO of Microsoft, is married to Anu Nadella. They have been married since 1992.'), 0.96),(Document(page_content='Anu Nadella is the wife of Microsoft CEO, Satya Nadella. They have been together for many years.'), 0.94),(Document(page_content='The wife of Satya Nadella, chief executive officer of Microsoft Corporation, is Anu Nadella. They tied the knot in 1992.'), 0.95)][(Document(page_content='Anu Nadella, wife of Microsoft CEO Satya Nadella, is 38 years old.'), 0.96),(Document(page_content='38-year-old Anu Nadella is married to Satya Nadella, the CEO of Microsoft.'), 0.94), (Document(page_content='Anu Nadella, spouse of Satya Nadella, Microsoft Corporation's CEO, is currently 38 years old.'), 0.95)][(Document(page_content='Anu Nadella, wife of Microsoft CEO Satya Nadella, is 38 years old.'), 0.96),(Document(page_content='38-year-old Anu Nadella is married to Satya Nadella, the CEO of Microsoft.'), 0.94), (Document(page_content='Anu Nadella, spouse of Satya Nadella, Microsoft Corporation's CEO, is currently 38 years old.'), 0.95)]
     Thought: First, I need to find who is the CEO of Microsoft.
-    Action: Searching through [Satya Nadella is the CEO of Microsoft Corporation. He took over as CEO in February 2014, succeeding Steve Ballmer, Microsoft, the Redmond-based tech giant, is led by CEO Satya Nadella, who assumed the role in 2014, The chief executive officer of Microsoft Corporation is Satya Nadella. Nadella took the helm in 2014 after Steve Ballmer stepped down.]
+    Search: Searching context
     Action Input: Who is the CEO of Microsoft?
     Observation: Satya Nadella is the CEO of Microsoft.
     Thought: Now, I should find out Satya Nadella's wife.
-    Action: Searching through [Satya Nadella, the CEO of Microsoft, is married to Anu Nadella. They have been married since 1992, Anu Nadella is the wife of Microsoft CEO, Satya Nadella. They have been together for many years, The wife of Satya Nadella, chief executive officer of Microsoft Corporation, is Anu Nadella. They tied the knot in 1992.]
+    Search: Searching context
     Observation: Satya Nadella's wife's name is Anupama Nadella.
     Action Input: Who is Satya Nadella's wife?
     Thought: Then, I need to check Anupama Nadella's age.
-    Action: Searching through [Anu Nadella, wife of Microsoft CEO Satya Nadella, is 38 years old, 38-year-old Anu Nadella is married to Satya Nadella, the CEO of Microsoft, Anu Nadella, spouse of Satya Nadella, Microsoft Corporation's CEO, is currently 38 years old.]
+    Search: Searching context
     Action Input: How old is Anupama Nadella?
     Thought: I now know the final answer.
     Final Answer: Anupama Nadella is 38 years old.
-
     ### Input:
     {{question}}
 
     ### Response:
     Question: {{question}}
+    Context: {{context}}
     Thought: {{gen 'thought' stop='\\n'}}
-    Action: {{context}}
+    Search: {{searching context}}
     Observation: {{gen 'thought2' stop='\\n'}}
     Action Input: {{gen 'actInput' stop='\\n'}}
     Thought: {{gen 'thought3' stop='\\n'}}
@@ -114,7 +122,3 @@ def run_script():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5001)
-
-
-print("\n\nProgram Result:")
-print(executed_program)

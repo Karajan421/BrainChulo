@@ -9,6 +9,7 @@ from app.llms.oobabooga_llm import OobaboogaLLM
 from app.prompt_templates.document_based_conversation import (
     Examples,
     ConversationWithDocumentTemplate,
+    ContextFromDocumentTemplate,
     guidanceTemplate
 )
 from app.settings import logger, load_config
@@ -48,6 +49,15 @@ class DocumentBasedConversation:
 
         self.conversation_chain = ConversationChain(
             llm=self.llm, prompt=self.prompt, memory=convs_memory, verbose=True
+        )
+
+        self.context_prompt = ContextFromDocumentTemplate(
+            input_variables=["input", "history"],
+            document_store=self.vector_store_docs,
+        )
+
+        self.context_chain = ConversationChain(
+            llm=self.llm, prompt=self.context_prompt, memory=convs_memory, verbose=True
         )
 
         if USE_AGENT:
@@ -146,6 +156,36 @@ class DocumentBasedConversation:
                 ).removesuffix("`")
         else:
             response = self.conversation_chain.predict(input=input)
+
+        return response
+    
+    def context_predict(self, input):
+        """
+        Predicts a response based on the given input.
+
+        Args:
+          input (str): The input string to generate a response for.
+
+        Returns:
+          str: The generated response string.
+
+        Raises:
+          OutputParserException: If the response from the conversation agent could not be parsed.
+        """
+        if USE_AGENT:
+            try:
+                response = self.conversation_agent.run(
+                    input=f"{Examples}\n{input}",
+                )
+            except OutputParserException as e:
+                response = str(e)
+                if not response.startswith("Could not parse LLM output: `"):
+                    raise e
+                response = response.removeprefix(
+                    "Could not parse LLM output: `"
+                ).removesuffix("`")
+        else:
+            response = self.context_chain.predict(input=input)
 
         return response
 

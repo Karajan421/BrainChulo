@@ -18,6 +18,8 @@ Based on this information, how may I assist you today?
 {input}
 ### Response:"""
 
+context_template = """{search}"""
+
 guidance_template = """Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.### Instruction:
     You are a librarian AI who uses document information to answer questions. Documents as formatted as follows: [(Document(page_content="<important context>", metadata='source': '<source>'), <rating>)] where <important context> is the context, <source> is the source, and <rating> is the rating. 
     Strictly use the following format:
@@ -39,6 +41,22 @@ guidance_template = """Below is an instruction that describes a task, paired wit
 class ConversationWithDocumentTemplate(StringPromptTemplate):
     # The template to use
     template: str = default_template
+    document_store: Chroma
+
+    def format(self, **kwargs) -> str:
+        print("Entering format f with kwargs: ", kwargs)
+        # Set the agent_scratchpad variable to that value
+        input_question = kwargs.get("input")
+        docs = self.document_store.similarity_search_with_score(
+            input_question, top_k_docs_for_context=10
+        )
+        kwargs["search"] = docs
+
+        return self.template.format(**kwargs)
+
+class ContextFromDocumentTemplate(StringPromptTemplate):
+    # The template to use
+    template: str = context_template
     document_store: Chroma
 
     def format(self, **kwargs) -> str:
