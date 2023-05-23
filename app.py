@@ -68,13 +68,13 @@ def run_script():
     question, top_k_docs_for_context=20
         )
     """
-    program = guidance("""### Instruction:You are a librarian AI who uses document information to answer questions. Documents as formatted as follows: [(Document(page_content="<important context>", metadata='source': '<source>'), <rating>)] where <important context> is the context, <source> is the source, and <rating> is the rating. 
+    program = guidance("""### Instruction:
+    You are a librarian AI who uses document information to answer questions. Documents as formatted as follows: [(Document(page_content="<important context>", metadata='source': '<source>'), <rating>)] where <important context> is the context, <source> is the source, and <rating> is the rating. 
     Strictly use the following format:
 
     Question: the input question you must answer
-    Context: the documents at your disposal to answer
     Thought: you should always think about what to do
-    Action: what you should do to answer the question, should a search in the documents provided
+    Action: what you should do to answer the question, should a search in Context
     Action Input: the input to the action, should be a question.
     Observation: the result of the action
     ... (this Thought/Action/Action Input/Observation can repeat N times)
@@ -84,17 +84,16 @@ def run_script():
 
     For examples:
     Question: How old is CEO of Microsoft wife?
-    Context:[(Document(page_content='Satya Nadella is the CEO of Microsoft Corporation. He took over as CEO in February 2014, succeeding Steve Ballmer.'), 0.95), (Document(page_content='Microsoft, the Redmond-based tech giant, is led by CEO Satya Nadella, who assumed the role in 2014.', 0.91), (Document(page_content='The chief executive officer of Microsoft Corporation is Satya Nadella. Nadella took the helm in 2014 after Steve Ballmer stepped down.'), 0.93)][(Document(page_content='Satya Nadella, the CEO of Microsoft, is married to Anu Nadella. They have been married since 1992.'), 0.96),(Document(page_content='Anu Nadella is the wife of Microsoft CEO, Satya Nadella. They have been together for many years.'), 0.94),(Document(page_content='The wife of Satya Nadella, chief executive officer of Microsoft Corporation, is Anu Nadella. They tied the knot in 1992.'), 0.95)][(Document(page_content='Anu Nadella, wife of Microsoft CEO Satya Nadella, is 38 years old.'), 0.96),(Document(page_content='38-year-old Anu Nadella is married to Satya Nadella, the CEO of Microsoft.'), 0.94), (Document(page_content='Anu Nadella, spouse of Satya Nadella, Microsoft Corporation's CEO, is currently 38 years old.'), 0.95)][(Document(page_content='Anu Nadella, wife of Microsoft CEO Satya Nadella, is 38 years old.'), 0.96),(Document(page_content='38-year-old Anu Nadella is married to Satya Nadella, the CEO of Microsoft.'), 0.94), (Document(page_content='Anu Nadella, spouse of Satya Nadella, Microsoft Corporation's CEO, is currently 38 years old.'), 0.95)]
     Thought: First, I need to find who is the CEO of Microsoft.
-    Search: Searching context
+    Action: Searching through  [(Document(page_content='Satya Nadella is the CEO of Microsoft Corporation. He took over as CEO in February 2014, succeeding Steve Ballmer.'), 0.95), (Document(page_content='Microsoft, the Redmond-based tech giant, is led by CEO Satya Nadella, who assumed the role in 2014.', 0.91), (Document(page_content='The chief executive officer of Microsoft Corporation is Satya Nadella. Nadella took the helm in 2014 after Steve Ballmer stepped down.'), 0.93)]
     Action Input: Who is the CEO of Microsoft?
     Observation: Satya Nadella is the CEO of Microsoft.
     Thought: Now, I should find out Satya Nadella's wife.
-    Search: Searching context
+    Action: Searching through [(Document(page_content='Satya Nadella, the CEO of Microsoft, is married to Anu Nadella. They have been married since 1992.'), 0.96),(Document(page_content='Anu Nadella is the wife of Microsoft CEO, Satya Nadella. They have been together for many years.'), 0.94),(Document(page_content='The wife of Satya Nadella, chief executive officer of Microsoft Corporation, is Anu Nadella. They tied the knot in 1992.'), 0.95)]
     Observation: Satya Nadella's wife's name is Anupama Nadella.
     Action Input: Who is Satya Nadella's wife?
     Thought: Then, I need to check Anupama Nadella's age.
-    Search: Searching context
+    Action: Searching through [(Document(page_content='Anu Nadella, wife of Microsoft CEO Satya Nadella, is 38 years old.'), 0.96),(Document(page_content='38-year-old Anu Nadella is married to Satya Nadella, the CEO of Microsoft.'), 0.94), (Document(page_content='Anu Nadella, spouse of Satya Nadella, Microsoft Corporation's CEO, is currently 38 years old.'), 0.95)][(Document(page_content='Anu Nadella, wife of Microsoft CEO Satya Nadella, is 38 years old.'), 0.96),(Document(page_content='38-year-old Anu Nadella is married to Satya Nadella, the CEO of Microsoft.'), 0.94), (Document(page_content='Anu Nadella, spouse of Satya Nadella, Microsoft Corporation's CEO, is currently 38 years old.'), 0.95)]
     Action Input: How old is Anupama Nadella?
     Thought: I now know the final answer.
     Final Answer: Anupama Nadella is 38 years old.
@@ -103,9 +102,8 @@ def run_script():
 
     ### Response:
     Question: {{question}}
-    Context: {{context}}
     Thought: {{gen 'thought' stop='\\n'}}
-    Search: {{searching context}}
+    Action: {{context}}
     Observation: {{gen 'thought2' stop='\\n'}}
     Action Input: {{gen 'actInput' stop='\\n'}}
     Thought: {{gen 'thought3' stop='\\n'}}
