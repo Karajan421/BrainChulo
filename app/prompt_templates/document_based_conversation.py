@@ -18,7 +18,13 @@ Based on this information, how may I assist you today?
 {input}
 ### Response:"""
 
-context_template = """{search}"""
+context_template = """ You are a copyist monk tasked with rewriting a doc in your answer.
+
+Here is the document to copy:
+{search}
+
+You MUST return {search} and nothing more.
+### Response:"""
 
 guidance_template = """Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.### Instruction:
     You are a librarian AI who uses document information to answer questions. Documents as formatted as follows: [(Document(page_content="<important context>", metadata='source': '<source>'), <rating>)] where <important context> is the context, <source> is the source, and <rating> is the rating. 
