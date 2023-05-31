@@ -3,20 +3,19 @@ import re
 
 from colorama import Fore
 from colorama import Style
+from transformers import pipeline
 from langchain.chains import RetrievalQA
 from langchain.docstore.document import Document
+from langchain import HuggingFacePipeline
 from langchain.embeddings import HuggingFaceInstructEmbeddings
+
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores import Chroma
 
 
 def clean_text(text):
-    # Remove line breaks
     text = text.replace("\n", " ")
-
-    # Remove special characters
     text = re.sub(r"[^\w\s]", "", text)
-
     return text
 
 
@@ -38,48 +37,46 @@ def split_documents(
 
 def checkQuestion(llm, question: str, retriever):
     QUESTION_CHECK_PROMPT_TEMPLATE = """You MUST answer with 'yes' or 'no'. Given the following pieces of context, determine if there are any elements related to the question in the context.
-Don't forget you MUST answer with 'yes' or 'no'.
+Don't forget you MUST answer with 'Yes' or 'No'.
 Context:{context}
 Question: Are there any elements related to ""{question}"" in the context?
 """
-    qa = RetrievalQA.from_chain_type(
-        llm=llm, chain_type="stuff", retriever=retriever, return_source_documents=True
-    )
 
-    # Answer the question
+    qa = RetrievalQA.from_chain_type(llm=llm, chain_type="stuff", retriever=retriever, return_source_documents=True)
     answer_data = qa({"query": question})
-
-    # Check if 'answer' is in answer_data, if not print it in bold red
     if "result" not in answer_data:
         print(f"\033[1;31m{answer_data}\033[0m")
         return "Issue in retrieving the answer."
 
     context_documents = answer_data["source_documents"]
-
-    # Combine all contexts into one
     context = " ".join([clean_text(doc.page_content) for doc in context_documents])
-    # Formulate the prompt for the LLM
     question_check_prompt = QUESTION_CHECK_PROMPT_TEMPLATE.format(
         context=context, question=question
     )
     print(Fore.GREEN + Style.BRIGHT + question_check_prompt + Style.RESET_ALL)
-    # Submit the prompt to the LLM directly
     answerable = llm(question_check_prompt)
     print(Fore.GREEN + Style.BRIGHT + answerable + Style.RESET_ALL)
-    return answerable[-3:]
+    #return answerable[-3:]
+    if "yes" in answerable.lower():
+        return "Yes"
+    else:
+        return " No"
 
 
 def load_tools(llm_model, settings, filepath=False):
+    print(Fore.GREEN + Style.BRIGHT + f"Starting reviewing tools...." + Style.RESET_ALL)
+    
+    llm_pipe = pipeline(
+        task="text2text-generation",
+        model='lmsys/fastchat-t5-3b-v1.0',
+        model_kwargs={}
+    )
+    llm = HuggingFacePipeline(pipeline=llm_pipe)
 
     if filepath:
         def ingest_file(file_path_arg):
-            # Load unstructured document
             documents = load_unstructured_document(file_path_arg)
-
-            # Split documents into chunks
             documents = split_documents(documents, chunk_size=100, chunk_overlap=20)
-
-            # Determine the embedding model to use
             EmbeddingsModel = settings.embeddings_map.get(settings.embeddings_model)
             if EmbeddingsModel is None:
                 raise ValueError(f"Invalid embeddings model: {settings.embeddings_model}")
@@ -92,10 +89,7 @@ def load_tools(llm_model, settings, filepath=False):
             embedding = EmbeddingsModel(
                 model_name=settings.embeddings_model, model_kwargs=model_kwargs
             )
-
-            # Store embeddings from the chunked documents
             vectordb = Chroma.from_documents(documents=documents, embedding=embedding)
-
             retriever = vectordb.as_retriever(search_kwargs={"k": 4})
 
             return retriever, file_path_arg
@@ -104,21 +98,18 @@ def load_tools(llm_model, settings, filepath=False):
 
     def searchChroma(key_word):
         qa = RetrievalQA.from_chain_type(
-            llm=llm_model,
+            llm=llm,
             chain_type="stuff",
             retriever=retriever,
             return_source_documents=False,
         )
-
-        print(qa)
         res = qa.run(key_word)
-        print(res)
         return res
 
     dict_tools = {
         "Chroma Search": searchChroma,
         "Check Question": lambda question: checkQuestion(
-            llm_model, question, retriever
+            llm, question, retriever
         ),
     }
     if filepath:

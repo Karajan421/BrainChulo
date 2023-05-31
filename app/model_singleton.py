@@ -13,8 +13,8 @@ def load_model_into_guidance(settings: Settings):
 
     print("Wut")
     print(os.getcwd())
-    print(os.listdir("/models"))
-    print(os.listdir("/models/wizardlm"))
-    print("What")
+    #print(os.listdir("/models"))
+    #print(os.listdir("/models/wizardlm"))
+    #print("What")
     llama = guidance.llms.Transformers(model=settings.model_path, device_map="auto", load_in_8bit=True)
     return llama
