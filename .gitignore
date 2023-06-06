@@ -12,7 +12,6 @@ venv/
 .venv/
 .vscode
 *.bak
-*.ipynb
 *.log
 
 # Do not save index
